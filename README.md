@@ -3,12 +3,17 @@
 A small Chromium extension that opens the page you're on through
 `https://freedium-mirror.cfd/<url>`.
 
+<p align="center"><img src="docs/screenshot.png" alt="Right-click a link and choose Open link in Freedium" width="640"></p>
+
 ## Install
 
-1. Go to `chrome://extensions` (or `edge://extensions`, `brave://extensions`, …).
-2. Turn on **Developer mode**.
-3. Click **Load unpacked** and pick this folder.
-4. Optional: pin the extension to the toolbar.
+1. Download **[freedium-extension.zip](https://github.com/capheproject/freedium-extension/releases/latest/download/freedium-extension.zip)** from the [latest release](https://github.com/capheproject/freedium-extension/releases/latest) and unzip it somewhere it can stay (the browser loads it from that folder).
+2. Go to `chrome://extensions` (or `edge://extensions`, `brave://extensions`, …).
+3. Turn on **Developer mode**.
+4. Click **Load unpacked** and pick the unzipped folder.
+5. Optional: pin the extension to the toolbar.
+
+It isn't on the Chrome Web Store, so the browser may remind you on startup that a developer-mode extension is installed. That's expected.
 
 ## Use
 
