@@ -28,3 +28,7 @@ To tweak the colours or arrow thickness, edit `GREEN`, `INK` or `STROKE` in it, 
 ```
 python3 make_icons.py icons
 ```
+
+## License
+
+MIT
