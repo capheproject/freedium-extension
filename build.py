@@ -14,7 +14,7 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent
 DIST = ROOT / "dist"
-SHARED = ["background.js", "services.js", "options.html", "options.js", "LICENSE", *sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / "icons").glob("*.png"))]
+SHARED = ["background.js", "services.js", "options.html", "options.js", "fab.js", "LICENSE", *sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / "icons").glob("*.png"))]
 
 TARGETS = {
     "freedium-extension.zip": ROOT / "manifest.json",

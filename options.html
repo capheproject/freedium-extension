@@ -76,6 +76,17 @@
     button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
     .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
     #status { color: var(--muted); }
+    .field-label { display: block; margin: 8px 0 4px; }
+    textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      color: var(--fg);
+      font: 12px/1.5 ui-monospace, monospace;
+    }
+    .error { color: var(--danger); font-size: 12px; }
     label.toggle { display: flex; gap: 8px; align-items: flex-start; margin-top: 16px; }
     label.toggle input { margin-top: 3px; }
   </style>
@@ -98,6 +109,17 @@
       (HTTP 4xx/5xx).</span>
   </label>
 
+  <h2>Floating button</h2>
+  <p>A button in the corner of the page that does the same as the toolbar button. Drag it to move it;
+     its × hides it until the page is reloaded.</p>
+  <label for="buttonSites" class="field-label">Show it on these sites (one per line, subdomains included):</label>
+  <textarea id="buttonSites" rows="3" spellcheck="false" autocapitalize="off" placeholder="economist.com"></textarea>
+  <div id="buttonSitesError" class="error" role="alert"></div>
+  <label class="toggle">
+    <input id="buttonOnBypass" type="checkbox">
+    <span>Also show it on bypass-site pages, to switch to the next site.</span>
+  </label>
+
   <div class="actions">
     <button id="save" class="primary" type="button">Save</button>
     <span id="status" role="status"></span>
@@ -110,8 +132,8 @@
     <li><code>{path}</code> becomes only the path, e.g. <code>https://scribe.rip/{path}</code></li>
     <li><code>{domain}</code> becomes the site's address the way Google Translate writes it (<code>www-economist-com</code>), e.g. <code>https://{domain}.translate.goog/{path}</code></li>
   </ul>
-  <p>When you save a site that's new, the browser asks for permission to see its pages' status, so
-     the automatic fallback can tell when it fails.</p>
+  <p>When you save a site that's new, the browser asks for permission to see its pages, so the
+     automatic fallback can tell when one fails and the floating button can appear on it.</p>
 
   <script src="services.js"></script>
   <script src="options.js"></script>

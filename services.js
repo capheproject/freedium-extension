@@ -145,11 +145,38 @@ function parseWith(template, url) {
   }
 }
 
+// Sites that get the floating button.
+const DEFAULT_BUTTON_SITES = ["economist.com"];
+
+// "https://www.Economist.com/x" or "economist.com" -> "economist.com".
+// Null if it isn't a plain domain.
+function normalizeDomain(input) {
+  let d = String(input).trim().toLowerCase();
+  if (!d) return null;
+  d = d.replace(/^[a-z]+:\/\//, "").split(/[/?#:]/)[0].replace(/^\*\./, "").replace(/^www\./, "");
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(d) ? d : null;
+}
+
+// Match pattern for a domain and its subdomains (also matches the bare domain).
+function domainPattern(domain) {
+  return `*://*.${domain}/*`;
+}
+
+function onDomain(url, domain) {
+  const host = hostOf(url);
+  return host === domain || host.endsWith("." + domain);
+}
+
 async function loadSettings() {
-  const stored = await chrome.storage.local.get(["services", "autoFallback"]);
+  const stored = await chrome.storage.local.get(["services", "autoFallback", "buttonSites", "buttonOnBypass"]);
   const services =
     Array.isArray(stored.services) && stored.services.length ? stored.services : DEFAULT_SERVICES;
-  return { services, autoFallback: stored.autoFallback !== false };
+  return {
+    services,
+    autoFallback: stored.autoFallback !== false,
+    buttonSites: Array.isArray(stored.buttonSites) ? stored.buttonSites : DEFAULT_BUTTON_SITES,
+    buttonOnBypass: stored.buttonOnBypass !== false
+  };
 }
 
 // Bring settings saved by an older version up to date: switch off the

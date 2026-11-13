@@ -9,8 +9,8 @@ const WEB_PATTERNS = ["http://*/*", "https://*/*"];
 const ABORTED = new Set(["net::ERR_ABORTED", "Error code 2152398850"]);
 
 async function enabledSettings() {
-  const { services, autoFallback } = await loadSettings();
-  return { services: services.filter((s) => s.enabled), autoFallback };
+  const settings = await loadSettings();
+  return { ...settings, services: settings.services.filter((s) => s.enabled) };
 }
 
 // ---- Per-tab state ---------------------------------------------------------
@@ -153,6 +153,70 @@ async function onAction(tab) {
 }
 
 chrome.action.onClicked.addListener(onAction);
+
+// ---- Floating button (fab.js) ----------------------------------------------
+// Injected on the sites listed in the settings and on the bypass sites. It asks
+// whether to show itself; a tap does the same as the toolbar button.
+
+async function fabInfo(tab, url) {
+  const { services, buttonSites, buttonOnBypass } = await enabledSettings();
+  if (!tab || !services.length || !isWebUrl(url)) return { show: false };
+  const cur = await currentBypass(tab.id, url, services);
+  if (cur) {
+    if (!buttonOnBypass || services.length < 2) return { show: false };
+    const next = services[(cur.index + 1) % services.length];
+    return { show: true, label: `Try the next site (${next.name})` };
+  }
+  if (buttonSites.some((d) => onDomain(url, d))) {
+    return { show: true, label: `Open with ${services[0].name}` };
+  }
+  return { show: false };
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || !sender.tab) return;
+  // The page's own address is more reliable than sender.tab.url, which the
+  // browser may hide.
+  const tab = { ...sender.tab, url: isWebUrl(msg.url) ? msg.url : sender.tab.url };
+  if (msg.type === "fab-query") {
+    fabInfo(tab, tab.url).then(sendResponse, () => sendResponse({ show: false }));
+    return true; // answer asynchronously
+  }
+  if (msg.type === "fab-click") onAction(tab);
+});
+
+async function syncContentScripts() {
+  if (!chrome.scripting) return;
+  const { services, buttonSites, buttonOnBypass } = await enabledSettings();
+  const patterns = new Set(buttonSites.map(normalizeDomain).filter(Boolean).map(domainPattern));
+  if (buttonOnBypass) {
+    for (const s of services) {
+      const h = templateHostPattern(s.template);
+      if (h) patterns.add(`*://${h}/*`);
+    }
+  }
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: ["fab"] });
+  } catch (e) {
+    // wasn't registered
+  }
+  if (!patterns.size) return;
+  await chrome.scripting.registerContentScripts([
+    { id: "fab", matches: [...patterns], js: ["fab.js"], runAt: "document_idle" }
+  ]);
+}
+
+let syncing = Promise.resolve();
+function resyncContentScripts() {
+  syncing = syncing.then(syncContentScripts, syncContentScripts).catch((e) => console.error(e));
+}
+chrome.runtime.onInstalled.addListener(resyncContentScripts);
+chrome.runtime.onStartup.addListener(resyncContentScripts);
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && (changes.services || changes.buttonSites || changes.buttonOnBypass)) {
+    resyncContentScripts();
+  }
+});
 
 // ---- Right-click menus (desktop only) --------------------------------------
 

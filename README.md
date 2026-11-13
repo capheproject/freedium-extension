@@ -54,6 +54,13 @@ opens the current page in a new tab. Android has no right-click menus or keyboar
   "Try next bypass site" while you're on one.
 - On **Android** the button is in the browser menu (⋮ → Extensions → Open in Freedium).
 
+### Floating button
+
+On economist.com, a small green button with an arrow sits in the corner of the page. Tapping it does the
+same as the toolbar button, and on the bypass page it switches to the next site, so on Android you don't
+have to go through the menu. Drag it to move it (the spot is remembered); the × hides it until the page
+is reloaded. Change which sites get it, or turn it off on bypass pages, in the settings.
+
 ### Automatic fallback
 
 If a bypass site can't be reached or answers with an error page (HTTP 4xx/5xx), the tab moves on
@@ -65,8 +72,8 @@ that apart, so press the button again to move on.
 ### Settings
 
 Open the extension's options (`chrome://extensions` → Details → Extension options; Firefox: `about:addons`
-→ Open in Freedium → Preferences) to reorder, turn off, edit or add sites and to switch off the automatic
-fallback. A site's address uses `{url}` for the article address, `{encoded}` for it percent-encoded, or
+→ Open in Freedium → Preferences) to reorder, turn off, edit or add sites, to switch off the automatic
+fallback, and to choose where the floating button appears. A site's address uses `{url}` for the article address, `{encoded}` for it percent-encoded, or
 `{path}` for only its path (for Medium front-ends such as Scribe), or `{domain}` for the site's address the way
 Google Translate's proxy writes it (`www-economist-com`). When you add a site, the browser asks
 for permission to see its pages, which the automatic fallback needs to notice HTTP errors.

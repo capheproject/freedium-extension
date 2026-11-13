@@ -1,5 +1,8 @@
 const list = document.getElementById("list");
 const autoFallback = document.getElementById("autoFallback");
+const buttonSites = document.getElementById("buttonSites");
+const buttonSitesError = document.getElementById("buttonSitesError");
+const buttonOnBypass = document.getElementById("buttonOnBypass");
 const status = document.getElementById("status");
 
 let services = [];
@@ -101,12 +104,22 @@ document.getElementById("add").addEventListener("click", () => {
 document.getElementById("reset").addEventListener("click", () => {
   services = DEFAULT_SERVICES.map((s) => ({ ...s }));
   autoFallback.checked = true;
+  buttonSites.value = DEFAULT_BUTTON_SITES.join("\n");
+  buttonOnBypass.checked = true;
   setStatus("Defaults restored. Press Save to keep them.");
   render();
 });
 
+function readButtonSites() {
+  const lines = buttonSites.value.split(/[\n,]+/).map((l) => l.trim()).filter(Boolean);
+  const bad = lines.filter((l) => !normalizeDomain(l));
+  buttonSitesError.textContent = bad.length ? `Not a site address: ${bad.join(", ")}` : "";
+  return bad.length ? null : [...new Set(lines.map(normalizeDomain))];
+}
+
 document.getElementById("save").addEventListener("click", async () => {
-  if (!validate()) {
+  const sites = readButtonSites();
+  if (!validate() || !sites) {
     render();
     setStatus("Fix the highlighted sites first.");
     return;
@@ -119,22 +132,33 @@ document.getElementById("save").addEventListener("click", async () => {
   // Ask for access to any new sites. This has to happen straight from the
   // click, before anything is awaited, or the browser refuses to show it.
   const origins = [
-    ...new Set(services.map((s) => `*://${templateHostPattern(s.template)}/*`))
+    ...new Set([
+      ...services.map((s) => `*://${templateHostPattern(s.template)}/*`),
+      ...sites.map(domainPattern)
+    ])
   ];
   const granted = chrome.permissions.request({ origins }).catch(() => false);
 
   const clean = services.map(({ name, template, enabled }) => ({ name, template, enabled }));
-  await chrome.storage.local.set({ services: clean, autoFallback: autoFallback.checked });
+  await chrome.storage.local.set({
+    services: clean,
+    autoFallback: autoFallback.checked,
+    buttonSites: sites,
+    buttonOnBypass: buttonOnBypass.checked
+  });
+  buttonSites.value = sites.join("\n");
   render();
   setStatus(
     (await granted)
       ? "Saved."
-      : "Saved. Without access to the new sites, the automatic fallback only notices when they can't be reached at all."
+      : "Saved. Without access to the new sites, the button won't appear there and the automatic fallback only notices when they can't be reached at all."
   );
 });
 
 loadSettings().then((settings) => {
   services = settings.services.map((s) => ({ ...s }));
   autoFallback.checked = settings.autoFallback;
+  buttonSites.value = settings.buttonSites.join("\n");
+  buttonOnBypass.checked = settings.buttonOnBypass;
   render();
 });
