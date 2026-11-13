@@ -60,6 +60,12 @@ On economist.com, a small green button with an arrow sits in the corner of the p
 same as the toolbar button, and on the bypass page it switches to the next site, so on Android you don't
 have to go through the menu. Drag it to move it (the spot is remembered); the × hides it until the page
 is reloaded. Change which sites get it, or turn it off on bypass pages, in the settings.
+It keeps the same size on desktop-layout pages and when you pinch-zoom.
+
+If the button doesn't appear on a site, the browser probably hasn't given the extension access to it.
+The settings page lists any such sites with an **Allow access** button (it also opens by itself after an
+install or update when something is missing). On Android you can also allow it under ⋮ → Add-ons →
+Open in Freedium → Permissions.
 
 ### Automatic fallback
 

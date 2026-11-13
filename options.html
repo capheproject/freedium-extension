@@ -76,6 +76,14 @@
     button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
     .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
     #status { color: var(--muted); }
+    .notice {
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .notice p { color: var(--fg); }
+    .notice button { margin-top: 6px; }
     .field-label { display: block; margin: 8px 0 4px; }
     textarea {
       width: 100%;
@@ -92,6 +100,14 @@
   </style>
 </head>
 <body>
+  <div id="access" class="notice" hidden>
+    <strong>The extension can't use some sites yet</strong>
+    <p id="accessText"></p>
+    <button id="grant" class="primary" type="button">Allow access</button>
+    <p id="accessHelp" hidden>If nothing happened, allow it by hand: ⋮ → Add-ons → Open in Freedium →
+      Permissions (on a computer: the extension's details page).</p>
+  </div>
+
   <h1>Bypass sites</h1>
   <p>The toolbar button opens a page through the first enabled site. Press it again on that
      page to switch to the next one.</p>

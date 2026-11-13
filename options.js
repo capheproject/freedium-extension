@@ -162,3 +162,29 @@ loadSettings().then((settings) => {
   buttonOnBypass.checked = settings.buttonOnBypass;
   render();
 });
+
+// ---- Site access ----
+// Without it the floating button can't appear and errors on bypass sites go
+// unnoticed. Browsers don't always grant it on install, so offer it here.
+const access = document.getElementById("access");
+let missing = [];
+
+async function checkAccess() {
+  missing = await missingOrigins();
+  access.hidden = !missing.length;
+  document.getElementById("accessText").textContent =
+    `It isn't allowed on ${missing.map(originLabel).join(", ")}, so the floating button won't ` +
+    "appear there and the automatic fallback can't spot error pages.";
+}
+
+document.getElementById("grant").addEventListener("click", async () => {
+  // Must be called straight from the click.
+  const granted = await chrome.permissions.request({ origins: missing }).catch(() => false);
+  if (!granted) document.getElementById("accessHelp").hidden = false;
+  checkAccess();
+});
+
+chrome.permissions.onAdded.addListener(checkAccess);
+chrome.permissions.onRemoved.addListener(checkAccess);
+chrome.storage.onChanged.addListener(checkAccess);
+checkAccess();

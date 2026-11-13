@@ -4,8 +4,8 @@
   if (window.top !== window || window.__openInBypassFab) return;
   window.__openInBypassFab = true;
 
-  const POS_KEY = "fabPosition"; // { x, y } as fractions of the viewport
-  const SIZE = 52;
+  const POS_KEY = "fabPosition"; // { x, y } as fractions of the visible area
+  const SIZE = 52; // on-screen size, whatever the page's zoom
   const MARGIN = 12;
   const DRAG_THRESHOLD = 8;
 
@@ -16,17 +16,26 @@
     })
     .catch(() => {});
 
+  // Set styles with !important through element.style: a page's Content
+  // Security Policy can't block them and its own CSS can't override them.
+  function css(el, styles) {
+    for (const [k, v] of Object.entries(styles)) el.style.setProperty(k, v, "important");
+  }
+
   async function mount(label) {
-    // Styles are set through element.style so a page's Content Security Policy
-    // can't block them; the shadow root keeps the page's own CSS out.
     const host = document.createElement("div");
-    Object.assign(host.style, {
+    css(host, {
       all: "initial",
+      display: "block",
       position: "fixed",
-      zIndex: "2147483647",
+      left: "0",
+      top: "0",
+      "z-index": "2147483647",
       width: SIZE + "px",
       height: SIZE + "px",
-      touchAction: "none"
+      "transform-origin": "0 0",
+      "touch-action": "none",
+      visibility: "hidden"
     });
     const root = host.attachShadow({ mode: "closed" });
 
@@ -34,22 +43,22 @@
     button.type = "button";
     button.title = label;
     button.setAttribute("aria-label", label);
-    Object.assign(button.style, {
+    css(button, {
       all: "initial",
-      boxSizing: "border-box",
+      "box-sizing": "border-box",
       width: SIZE + "px",
       height: SIZE + "px",
-      borderRadius: "16px",
+      "border-radius": "16px",
       background: "rgb(174, 214, 167)",
       border: "1px solid rgba(20, 20, 18, 0.25)",
-      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+      "box-shadow": "0 2px 8px rgba(0, 0, 0, 0.3)",
       display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      "align-items": "center",
+      "justify-content": "center",
       cursor: "pointer",
-      touchAction: "none",
-      userSelect: "none",
-      webkitTapHighlightColor: "transparent"
+      "touch-action": "none",
+      "user-select": "none",
+      "-webkit-tap-highlight-color": "transparent"
     });
     button.append(arrowIcon());
 
@@ -58,30 +67,62 @@
     close.textContent = "×";
     close.title = "Hide this button on this page";
     close.setAttribute("aria-label", "Hide this button on this page");
-    Object.assign(close.style, {
+    css(close, {
       all: "initial",
       position: "absolute",
-      top: "-8px",
-      left: "-8px",
-      width: "22px",
-      height: "22px",
-      borderRadius: "11px",
+      top: "-9px",
+      left: "-9px",
+      width: "24px",
+      height: "24px",
+      "border-radius": "12px",
       background: "rgb(20, 20, 18)",
       color: "#fff",
-      font: "bold 15px/22px system-ui, sans-serif",
-      textAlign: "center",
+      font: "bold 16px/24px system-ui, sans-serif",
+      "text-align": "center",
       cursor: "pointer",
-      boxShadow: "0 1px 4px rgba(0, 0, 0, 0.3)"
-    });
-    close.addEventListener("click", (e) => {
-      e.stopPropagation();
-      host.remove();
+      "box-shadow": "0 1px 4px rgba(0, 0, 0, 0.3)"
     });
 
     root.append(button, close);
-    document.documentElement.append(host);
 
-    // ---- Position (draggable, remembered per browser) ----
+    // ---- Keep it on the page ----
+    // Sites built with React and similar can rebuild the whole document after
+    // loading and throw the button away; put it back when that happens.
+    let closed = false;
+    let watched = null;
+    const watcher = new MutationObserver(() => attach());
+    function attach() {
+      if (closed) return;
+      const html = document.documentElement;
+      if (!html) return;
+      // Follow a replaced <html> element.
+      if (watched !== html) {
+        watcher.disconnect();
+        watcher.observe(document, { childList: true });
+        watcher.observe(html, { childList: true });
+        watched = html;
+      }
+      if (host.parentNode !== html) {
+        html.append(host);
+        place();
+      }
+    }
+    // Backup for changes the observer can't see.
+    const timer = setInterval(attach, 2000);
+
+    close.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closed = true;
+      watcher.disconnect();
+      window.removeEventListener("resize", schedule);
+      clearInterval(timer);
+      host.remove();
+    });
+
+    // ---- Size and position ----
+    // Desktop-layout pages on a phone are shown zoomed out (and the user can
+    // pinch-zoom any page). Scale the button by the inverse of the zoom and
+    // place it inside the visible part of the page, so it always looks the same.
     let pos = { x: 1, y: 0.75 };
     try {
       const stored = (await chrome.storage.local.get(POS_KEY))[POS_KEY];
@@ -90,31 +131,67 @@
       // keep the default
     }
 
-    function place() {
-      const maxX = window.innerWidth - SIZE - MARGIN;
-      const maxY = window.innerHeight - SIZE - MARGIN;
-      host.style.left = Math.round(MARGIN + pos.x * (maxX - MARGIN)) + "px";
-      host.style.top = Math.round(MARGIN + pos.y * (maxY - MARGIN)) + "px";
+    function view() {
+      const vv = window.visualViewport;
+      const scale = vv && vv.scale > 0 ? vv.scale : 1;
+      return {
+        scale,
+        left: vv ? vv.offsetLeft : 0,
+        top: vv ? vv.offsetTop : 0,
+        width: vv ? vv.width : window.innerWidth,
+        height: vv ? vv.height : window.innerHeight
+      };
     }
-    place();
-    window.addEventListener("resize", place);
 
+    // Free space (in page pixels) the button can move around in.
+    function span(v) {
+      const k = 1 / v.scale;
+      return {
+        x: Math.max(0, v.width - (SIZE + 2 * MARGIN) * k),
+        y: Math.max(0, v.height - (SIZE + 2 * MARGIN) * k),
+        k
+      };
+    }
+
+    function place() {
+      const v = view();
+      const s = span(v);
+      const left = v.left + MARGIN * s.k + pos.x * s.x;
+      const top = v.top + MARGIN * s.k + pos.y * s.y;
+      css(host, {
+        transform: `translate(${left}px, ${top}px) scale(${s.k})`,
+        visibility: "visible"
+      });
+    }
+
+    let frame = 0;
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(() => ((frame = 0), place()));
+    };
+    window.addEventListener("resize", schedule);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", schedule);
+      window.visualViewport.addEventListener("scroll", schedule);
+    }
+
+    // ---- Drag to move, tap to use ----
     let drag = null;
     button.addEventListener("pointerdown", (e) => {
-      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, left: host.offsetLeft, top: host.offsetTop, moved: false };
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, start: { ...pos }, moved: false };
       button.setPointerCapture(e.pointerId);
     });
     button.addEventListener("pointermove", (e) => {
       if (!drag || e.pointerId !== drag.id) return;
+      const v = view();
+      // Pointer coordinates are in page pixels; the threshold is on-screen.
       const dx = e.clientX - drag.x;
       const dy = e.clientY - drag.y;
-      if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      if (!drag.moved && Math.hypot(dx, dy) * v.scale < DRAG_THRESHOLD) return;
       drag.moved = true;
-      const spanX = Math.max(1, window.innerWidth - SIZE - 2 * MARGIN);
-      const spanY = Math.max(1, window.innerHeight - SIZE - 2 * MARGIN);
+      const s = span(v);
       pos = {
-        x: Math.min(1, Math.max(0, (drag.left + dx - MARGIN) / spanX)),
-        y: Math.min(1, Math.max(0, (drag.top + dy - MARGIN) / spanY))
+        x: Math.min(1, Math.max(0, drag.start.x + (s.x ? dx / s.x : 0))),
+        y: Math.min(1, Math.max(0, drag.start.y + (s.y ? dy / s.y : 0)))
       };
       place();
     });
@@ -130,7 +207,6 @@
     };
     button.addEventListener("pointerup", end);
     button.addEventListener("pointercancel", end);
-    // Keyboard users
     button.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
@@ -142,13 +218,15 @@
     function activate() {
       if (busy) return;
       busy = true;
-      button.style.opacity = "0.6";
+      button.style.setProperty("opacity", "0.6", "important");
       chrome.runtime.sendMessage({ type: "fab-click", url: location.href }).catch(() => {});
       setTimeout(() => {
         busy = false;
-        button.style.opacity = "1";
+        button.style.setProperty("opacity", "1", "important");
       }, 1500);
     }
+
+    attach();
   }
 
   // The extension's arrow, drawn as in make_icons.py.

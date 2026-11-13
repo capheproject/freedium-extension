@@ -136,7 +136,6 @@ chrome.webNavigation.onCompleted.addListener(async (d) => {
 
 chrome.tabs.onRemoved.addListener(clearState);
 
-chrome.runtime.onInstalled.addListener(() => migrateSettings());
 
 // ---- Toolbar button / Alt+Shift+F / Android menu entry ---------------------
 // On a normal page: open it through the first site in a new tab.
@@ -187,14 +186,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 async function syncContentScripts() {
   if (!chrome.scripting) return;
-  const { services, buttonSites, buttonOnBypass } = await enabledSettings();
-  const patterns = new Set(buttonSites.map(normalizeDomain).filter(Boolean).map(domainPattern));
-  if (buttonOnBypass) {
-    for (const s of services) {
-      const h = templateHostPattern(s.template);
-      if (h) patterns.add(`*://${h}/*`);
-    }
-  }
+  const patterns = new Set(await neededOrigins({ forButton: true }));
   try {
     await chrome.scripting.unregisterContentScripts({ ids: ["fab"] });
   } catch (e) {
@@ -212,6 +204,17 @@ function resyncContentScripts() {
 }
 chrome.runtime.onInstalled.addListener(resyncContentScripts);
 chrome.runtime.onStartup.addListener(resyncContentScripts);
+// Access granted later (from the settings page or the add-on manager).
+chrome.permissions.onAdded.addListener(resyncContentScripts);
+
+// Browsers don't always grant site access on install, and Firefox can leave
+// sites added in an update ungranted. Without it the floating button can't
+// appear, so open the settings page, which lists what's missing.
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason !== "install" && details.reason !== "update") return;
+  await migrateSettings();
+  if ((await missingOrigins()).length) chrome.runtime.openOptionsPage();
+});
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && (changes.services || changes.buttonSites || changes.buttonOnBypass)) {
     resyncContentScripts();

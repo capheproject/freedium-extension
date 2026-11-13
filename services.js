@@ -196,3 +196,30 @@ async function migrateSettings() {
   }
   await chrome.storage.local.set({ settingsVersion: SETTINGS_VERSION });
 }
+
+// Site patterns the extension needs access to: the bypass sites (to watch for
+// errors and show the button) and the floating-button sites.
+async function neededOrigins({ forButton = false } = {}) {
+  const { services, buttonSites, buttonOnBypass } = await loadSettings();
+  const origins = new Set(buttonSites.map(normalizeDomain).filter(Boolean).map(domainPattern));
+  if (!forButton || buttonOnBypass) {
+    for (const s of services) {
+      const h = s.enabled && templateHostPattern(s.template);
+      if (h) origins.add(`*://${h}/*`);
+    }
+  }
+  return [...origins];
+}
+
+async function missingOrigins() {
+  const missing = [];
+  for (const o of await neededOrigins()) {
+    if (!(await chrome.permissions.contains({ origins: [o] }))) missing.push(o);
+  }
+  return missing;
+}
+
+// "*://*.economist.com/*" -> "economist.com"
+function originLabel(origin) {
+  return origin.replace(/^\*:\/\//, "").replace(/^\*\./, "").replace(/\/\*$/, "");
+}
