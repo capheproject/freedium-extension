@@ -136,6 +136,8 @@ chrome.webNavigation.onCompleted.addListener(async (d) => {
 
 chrome.tabs.onRemoved.addListener(clearState);
 
+chrome.runtime.onInstalled.addListener(() => migrateSettings());
+
 // ---- Toolbar button / Alt+Shift+F / Android menu entry ---------------------
 // On a normal page: open it through the first site in a new tab.
 // On a bypass page: switch to the next site in the same tab.
@@ -173,7 +175,7 @@ async function buildMenus() {
       targetUrlPatterns: WEB_PATTERNS
     });
   });
-  const hosts = [...new Set(services.map((s) => hostOf(templatePrefix(s.template))))].filter(Boolean);
+  const hosts = [...new Set(services.map((s) => templateHostPattern(s.template)))].filter(Boolean);
   if (services.length > 1 && hosts.length) {
     menus.create({
       id: "next",

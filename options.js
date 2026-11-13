@@ -119,7 +119,7 @@ document.getElementById("save").addEventListener("click", async () => {
   // Ask for access to any new sites. This has to happen straight from the
   // click, before anything is awaited, or the browser refuses to show it.
   const origins = [
-    ...new Set(services.map((s) => `*://${hostOf(templatePrefix(s.template))}/*`))
+    ...new Set(services.map((s) => `*://${templateHostPattern(s.template)}/*`))
   ];
   const granted = chrome.permissions.request({ origins }).catch(() => false);
 

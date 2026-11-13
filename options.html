@@ -105,9 +105,10 @@
 
   <h2>Site addresses</h2>
   <ul>
-    <li><code>{url}</code> becomes the full article address, e.g. <code>https://freedium-mirror.cfd/{url}</code></li>
+    <li><code>{url}</code> becomes the full article address, e.g. <code>https://archive.ph/newest/{url}</code></li>
     <li><code>{encoded}</code> becomes the address percent-encoded, for sites that take it as a parameter, e.g. <code>https://example.com/read?u={encoded}</code></li>
-    <li><code>{path}</code> becomes only the path, for Medium front-ends, e.g. <code>https://scribe.rip/{path}</code></li>
+    <li><code>{path}</code> becomes only the path, e.g. <code>https://scribe.rip/{path}</code></li>
+    <li><code>{domain}</code> becomes the site's address the way Google Translate writes it (<code>www-economist-com</code>), e.g. <code>https://{domain}.translate.goog/{path}</code></li>
   </ul>
   <p>When you save a site that's new, the browser asks for permission to see its pages' status, so
      the automatic fallback can tell when it fails.</p>
