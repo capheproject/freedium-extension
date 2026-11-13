@@ -1,0 +1,140 @@
+const list = document.getElementById("list");
+const autoFallback = document.getElementById("autoFallback");
+const status = document.getElementById("status");
+
+let services = [];
+
+function setStatus(text) {
+  status.textContent = text;
+}
+
+function render() {
+  list.textContent = "";
+  services.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.className = "row" + (s.enabled ? "" : " off");
+
+    const enabled = document.createElement("input");
+    enabled.type = "checkbox";
+    enabled.checked = s.enabled;
+    enabled.title = "Use this site";
+    enabled.setAttribute("aria-label", `Use ${s.name || "this site"}`);
+    enabled.addEventListener("change", () => {
+      s.enabled = enabled.checked;
+      li.classList.toggle("off", !s.enabled);
+      setStatus("");
+    });
+
+    const name = document.createElement("input");
+    name.type = "text";
+    name.className = "name";
+    name.value = s.name;
+    name.placeholder = "Name";
+    name.setAttribute("aria-label", "Name");
+    name.addEventListener("input", () => {
+      s.name = name.value;
+      setStatus("");
+    });
+
+    const tools = document.createElement("div");
+    tools.className = "tools";
+    const button = (label, title, onClick, disabled) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      b.title = title;
+      b.setAttribute("aria-label", title);
+      b.disabled = disabled;
+      b.addEventListener("click", () => {
+        onClick();
+        setStatus("");
+        render();
+      });
+      tools.append(b);
+    };
+    button("↑", "Move up", () => services.splice(i - 1, 0, services.splice(i, 1)[0]), i === 0);
+    button("↓", "Move down", () => services.splice(i + 1, 0, services.splice(i, 1)[0]), i === services.length - 1);
+    button("✕", "Remove", () => services.splice(i, 1), false);
+
+    const template = document.createElement("input");
+    template.type = "text";
+    template.className = "template";
+    template.value = s.template;
+    template.placeholder = "https://example.com/{url}";
+    template.spellcheck = false;
+    template.autocapitalize = "off";
+    template.setAttribute("aria-label", "Address");
+    template.addEventListener("input", () => {
+      s.template = template.value.trim();
+      setStatus("");
+    });
+
+    li.append(enabled, name, tools, template);
+    if (s.error) {
+      const err = document.createElement("div");
+      err.className = "error";
+      err.textContent = s.error;
+      li.append(err);
+    }
+    list.append(li);
+  });
+}
+
+function validate() {
+  let ok = true;
+  for (const s of services) {
+    s.name = s.name.trim();
+    const problem = templateError(s.template);
+    s.error = problem ? `Address ${problem}.` : !s.name ? "Give this site a name." : null;
+    if (s.error) ok = false;
+  }
+  return ok;
+}
+
+document.getElementById("add").addEventListener("click", () => {
+  services.push({ name: "", template: "", enabled: true });
+  setStatus("");
+  render();
+  list.querySelector("li:last-child .name").focus();
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  services = DEFAULT_SERVICES.map((s) => ({ ...s }));
+  autoFallback.checked = true;
+  setStatus("Defaults restored. Press Save to keep them.");
+  render();
+});
+
+document.getElementById("save").addEventListener("click", async () => {
+  if (!validate()) {
+    render();
+    setStatus("Fix the highlighted sites first.");
+    return;
+  }
+  if (!services.some((s) => s.enabled)) {
+    setStatus("Enable at least one site.");
+    return;
+  }
+
+  // Ask for access to any new sites. This has to happen straight from the
+  // click, before anything is awaited, or the browser refuses to show it.
+  const origins = [
+    ...new Set(services.map((s) => `*://${hostOf(templatePrefix(s.template))}/*`))
+  ];
+  const granted = chrome.permissions.request({ origins }).catch(() => false);
+
+  const clean = services.map(({ name, template, enabled }) => ({ name, template, enabled }));
+  await chrome.storage.local.set({ services: clean, autoFallback: autoFallback.checked });
+  render();
+  setStatus(
+    (await granted)
+      ? "Saved."
+      : "Saved. Without access to the new sites, the automatic fallback only notices when they can't be reached at all."
+  );
+});
+
+loadSettings().then((settings) => {
+  services = settings.services.map((s) => ({ ...s }));
+  autoFallback.checked = settings.autoFallback;
+  render();
+});

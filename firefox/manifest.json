@@ -1,11 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Open in Freedium",
-  "version": "1.0.1",
-  "description": "Open the current page (or a link) through freedium-mirror.cfd.",
-  "permissions": ["activeTab", "contextMenus"],
+  "version": "1.1.0",
+  "description": "Open the current page (or a link) through Freedium, falling back to other bypass sites when it fails.",
+  "permissions": ["activeTab", "contextMenus", "storage", "webNavigation", "webRequest"],
+  "host_permissions": [
+    "*://freedium-mirror.cfd/*",
+    "*://freedium.cfd/*",
+    "*://scribe.rip/*",
+    "*://archive.ph/*",
+    "*://web.archive.org/*"
+  ],
+  "optional_host_permissions": ["*://*/*"],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["services.js", "background.js"]
   },
   "browser_specific_settings": {
     "gecko": {
@@ -19,6 +27,10 @@
       "strict_min_version": "128.0"
     }
   },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -26,7 +38,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Open in Freedium",
+    "default_title": "Open in Freedium (press again to try the next site)",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png"
@@ -37,7 +49,7 @@
       "suggested_key": {
         "default": "Alt+Shift+F"
       },
-      "description": "Open current page in Freedium"
+      "description": "Open current page in Freedium, or try the next bypass site"
     }
   }
 }

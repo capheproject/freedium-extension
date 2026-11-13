@@ -7,14 +7,14 @@ writes:
     dist/freedium-extension.zip          Chromium (manifest.json)
     dist/freedium-extension-firefox.xpi  Firefox  (firefox/manifest.json)
 
-Both packages share background.js and icons/; only the manifest differs.
+Both packages share the scripts, options page and icons; only the manifest differs.
 """
 import pathlib
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent
 DIST = ROOT / "dist"
-SHARED = ["background.js", "LICENSE", *sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / "icons").glob("*.png"))]
+SHARED = ["background.js", "services.js", "options.html", "options.js", "LICENSE", *sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / "icons").glob("*.png"))]
 
 TARGETS = {
     "freedium-extension.zip": ROOT / "manifest.json",

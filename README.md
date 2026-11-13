@@ -1,7 +1,7 @@
 # Open in Freedium
 
 A small browser extension (Chromium, Firefox and Firefox for Android forks like Iceraven) that opens the page you're on through
-`https://freedium-mirror.cfd/<url>`.
+`https://freedium-mirror.cfd/<url>`, and falls back to other bypass sites when Freedium can't load it.
 
 <p align="center"><img src="docs/screenshot.png" alt="Right-click a link and choose Open link in Freedium" width="640"></p>
 
@@ -45,16 +45,32 @@ opens the current page in a new tab. Android has no right-click menus or keyboar
 ## Use
 
 - **Toolbar button** or **Alt+Shift+F**: opens the current page in Freedium in a new tab.
-- **Right-click a page**: "Open page in Freedium".
-- **Right-click a link**: "Open link in Freedium" (no need to visit the article first).
+- **Press it again on that tab** to switch the same article to the next bypass site
+  (Freedium mirror → Freedium → Scribe → archive.today → Wayback Machine, then back to the start).
+- **Right-click a page or link** (desktop only): pick which site to open it with, or
+  "Try next bypass site" while you're on one.
+- On **Android** the button is in the browser menu (⋮ → Extensions → Open in Freedium).
+
+### Automatic fallback
+
+If a bypass site can't be reached or answers with an error page (HTTP 4xx/5xx), the tab moves on
+to the next site by itself, until one loads or the list runs out. It only watches the first load,
+so links you follow afterwards are left alone. Freedium sometimes shows an error message on a page that
+otherwise loads fine; the extension can't tell that apart, so press the button again to move on.
+
+### Settings
+
+Open the extension's options (`chrome://extensions` → Details → Extension options; Firefox: `about:addons`
+→ Open in Freedium → Preferences) to reorder, turn off, edit or add sites and to switch off the automatic
+fallback. A site's address uses `{url}` for the article address, `{encoded}` for it percent-encoded, or
+`{path}` for only its path (for Medium front-ends such as Scribe). When you add a site, the browser asks
+for permission to see its pages, which the automatic fallback needs to notice HTTP errors.
 
 To change the shortcut, go to `chrome://extensions/shortcuts` (Firefox: `about:addons` → gear → **Manage Extension Shortcuts**).
-If the mirror domain changes, edit `FREEDIUM_BASE` at the top of `background.js`
-and click the reload icon on the extension's card (Firefox: rebuild and load the `.xpi` again).
 
 ## Build
 
-Both browsers share `background.js` and `icons/`; only the manifest differs
+Both browsers share the scripts, options page and `icons/`; only the manifest differs
 (`manifest.json` for Chromium, `firefox/manifest.json` for Firefox, which uses
 background scripts instead of a service worker and carries the add-on ID). To make the release zips:
 
