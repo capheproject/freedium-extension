@@ -11,33 +11,48 @@ function isWebUrl(url) {
 }
 
 function openNextTo(tab, url) {
-  chrome.tabs.create({ url, index: tab.index + 1, openerTabId: tab.id });
+  // Firefox for Android (and forks like Iceraven) has no tab strip and rejects
+  // tab-placement options it doesn't support, so fall back to a plain new tab.
+  try {
+    if (tab) {
+      chrome.tabs.create({ url, index: tab.index + 1, openerTabId: tab.id });
+      return;
+    }
+  } catch (e) {
+    // fall through
+  }
+  chrome.tabs.create({ url });
 }
 
-// Toolbar button (and Alt+Shift+F): open the current page in a new tab
+// Toolbar button (and Alt+Shift+F): open the current page in a new tab.
+// On Firefox for Android this is the extension's entry in the browser menu.
 chrome.action.onClicked.addListener((tab) => {
   if (!isWebUrl(tab.url)) return;
   openNextTo(tab, toFreedium(tab.url));
 });
 
-// Right-click menus for pages and links
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "freedium-page",
-    title: "Open page in Freedium",
-    contexts: ["page"],
-    documentUrlPatterns: ["http://*/*", "https://*/*"]
+// Right-click menus for pages and links. Mobile Firefox has no context-menu
+// API, so skip them there instead of crashing the whole background script.
+const menus = chrome.contextMenus;
+if (menus) {
+  chrome.runtime.onInstalled.addListener(() => {
+    menus.create({
+      id: "freedium-page",
+      title: "Open page in Freedium",
+      contexts: ["page"],
+      documentUrlPatterns: ["http://*/*", "https://*/*"]
+    });
+    menus.create({
+      id: "freedium-link",
+      title: "Open link in Freedium",
+      contexts: ["link"],
+      targetUrlPatterns: ["http://*/*", "https://*/*"]
+    });
   });
-  chrome.contextMenus.create({
-    id: "freedium-link",
-    title: "Open link in Freedium",
-    contexts: ["link"],
-    targetUrlPatterns: ["http://*/*", "https://*/*"]
-  });
-});
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  const url = info.menuItemId === "freedium-link" ? info.linkUrl : info.pageUrl;
-  if (!isWebUrl(url)) return;
-  openNextTo(tab, toFreedium(url));
-});
+  menus.onClicked.addListener((info, tab) => {
+    const url = info.menuItemId === "freedium-link" ? info.linkUrl : info.pageUrl;
+    if (!isWebUrl(url)) return;
+    openNextTo(tab, toFreedium(url));
+  });
+}

@@ -5,7 +5,7 @@
 
 writes:
     dist/freedium-extension.zip          Chromium (manifest.json)
-    dist/freedium-extension-firefox.zip  Firefox  (firefox/manifest.json)
+    dist/freedium-extension-firefox.xpi  Firefox  (firefox/manifest.json)
 
 Both packages share background.js and icons/; only the manifest differs.
 """
@@ -18,7 +18,7 @@ SHARED = ["background.js", "LICENSE", *sorted(p.relative_to(ROOT).as_posix() for
 
 TARGETS = {
     "freedium-extension.zip": ROOT / "manifest.json",
-    "freedium-extension-firefox.zip": ROOT / "firefox" / "manifest.json",
+    "freedium-extension-firefox.xpi": ROOT / "firefox" / "manifest.json",
 }
 
 
