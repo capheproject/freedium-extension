@@ -1,7 +1,7 @@
 # Open in Freedium
 
-A small browser extension (Chromium, Firefox and Firefox for Android forks like Iceraven) that opens the page you're on through
-`https://freedium-mirror.cfd/<url>`, and falls back to other bypass sites when Freedium can't load it.
+A small browser extension (Chromium, Firefox and Firefox for Android forks like Iceraven) that opens the page you're on through a
+bypass site (archive.today by default), and falls back to the next one when a site can't load it.
 
 <p align="center"><img src="docs/screenshot.png" alt="Right-click a link and choose Open link in Freedium" width="640"></p>
 
@@ -44,9 +44,12 @@ opens the current page in a new tab. Android has no right-click menus or keyboar
 
 ## Use
 
-- **Toolbar button** or **Alt+Shift+F**: opens the current page in Freedium in a new tab.
+- **Toolbar button** or **Alt+Shift+F**: opens the current page through the first bypass site in a new tab.
 - **Press it again on that tab** to switch the same article to the next bypass site
-  (Freedium mirror → Freedium → Scribe → archive.today → Wayback Machine, then back to the start).
+  (archive.today → Wayback Machine → Google Translate proxy → archive.today "save new copy", then back to the start).
+- The last default site asks archive.today to make a fresh snapshot, for articles nobody has saved yet.
+  It takes a while and may ask for a captcha; the page then shows the copy when it's done.
+- Freedium, its mirror and Scribe (Medium only) and RemovePaywall are in the list but switched off; turn them on in the settings.
 - **Right-click a page or link** (desktop only): pick which site to open it with, or
   "Try next bypass site" while you're on one.
 - On **Android** the button is in the browser menu (⋮ → Extensions → Open in Freedium).
@@ -55,15 +58,17 @@ opens the current page in a new tab. Android has no right-click menus or keyboar
 
 If a bypass site can't be reached or answers with an error page (HTTP 4xx/5xx), the tab moves on
 to the next site by itself, until one loads or the list runs out. It only watches the first load,
-so links you follow afterwards are left alone. Freedium sometimes shows an error message on a page that
-otherwise loads fine; the extension can't tell that apart, so press the button again to move on.
+so links you follow afterwards are left alone. Some sites show a "not found" message on a page that
+otherwise loads fine (archive.today may do this for pages it has no copy of); the extension can't tell
+that apart, so press the button again to move on.
 
 ### Settings
 
 Open the extension's options (`chrome://extensions` → Details → Extension options; Firefox: `about:addons`
 → Open in Freedium → Preferences) to reorder, turn off, edit or add sites and to switch off the automatic
 fallback. A site's address uses `{url}` for the article address, `{encoded}` for it percent-encoded, or
-`{path}` for only its path (for Medium front-ends such as Scribe). When you add a site, the browser asks
+`{path}` for only its path (for Medium front-ends such as Scribe), or `{domain}` for the site's address the way
+Google Translate's proxy writes it (`www-economist-com`). When you add a site, the browser asks
 for permission to see its pages, which the automatic fallback needs to notice HTTP errors.
 
 To change the shortcut, go to `chrome://extensions/shortcuts` (Firefox: `about:addons` → gear → **Manage Extension Shortcuts**).
