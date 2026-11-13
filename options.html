@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open in Freedium – settings</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --fg: #1f2328;
+      --muted: #59636e;
+      --line: #d1d9e0;
+      --field: #f6f8fa;
+      --accent: #1a7f37;
+      --danger: #cf222e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1b22;
+        --fg: #e6edf3;
+        --muted: #9198a1;
+        --line: #3d444d;
+        --field: #2b2a33;
+        --accent: #3fb950;
+        --danger: #f85149;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--fg);
+      font: 14px/1.45 system-ui, sans-serif;
+      max-width: 720px;
+    }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 20px 0 6px; }
+    p, li { color: var(--muted); margin: 4px 0; }
+    code { font-size: 12px; }
+    ol#list { list-style: none; padding: 0; margin: 8px 0; }
+    .row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 6px 8px;
+      align-items: center;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+    }
+    .row input[type=text] {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      color: var(--fg);
+      font: inherit;
+    }
+    .row .name { font-weight: 600; }
+    .row .template { grid-column: 2 / 4; font-family: ui-monospace, monospace; font-size: 12px; }
+    .row.off .name, .row.off .template { opacity: 0.55; }
+    .row .error { grid-column: 2 / 4; color: var(--danger); font-size: 12px; }
+    .tools { display: flex; gap: 4px; }
+    button {
+      font: inherit;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .tools button { padding: 4px 8px; min-width: 32px; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    #status { color: var(--muted); }
+    .notice {
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .notice p { color: var(--fg); }
+    .notice button { margin-top: 6px; }
+    .field-label { display: block; margin: 8px 0 4px; }
+    textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--field);
+      color: var(--fg);
+      font: 12px/1.5 ui-monospace, monospace;
+    }
+    .error { color: var(--danger); font-size: 12px; }
+    label.toggle { display: flex; gap: 8px; align-items: flex-start; margin-top: 16px; }
+    label.toggle input { margin-top: 3px; }
+  </style>
+</head>
+<body>
+  <div id="access" class="notice" hidden>
+    <strong>The extension can't use some sites yet</strong>
+    <p id="accessText"></p>
+    <button id="grant" class="primary" type="button">Allow access</button>
+    <p id="accessHelp" hidden>If nothing happened, allow it by hand: ⋮ → Add-ons → Open in Freedium →
+      Permissions (on a computer: the extension's details page).</p>
+  </div>
+
+  <h1>Bypass sites</h1>
+  <p>The toolbar button opens a page through the first enabled site. Press it again on that
+     page to switch to the next one.</p>
+
+  <ol id="list"></ol>
+
+  <div class="actions">
+    <button id="add" type="button">Add site</button>
+    <button id="reset" type="button">Restore defaults</button>
+  </div>
+
+  <label class="toggle">
+    <input id="autoFallback" type="checkbox">
+    <span>Move on to the next site automatically when one is unreachable or returns an error page
+      (HTTP 4xx/5xx).</span>
+  </label>
+
+  <h2>Floating button</h2>
+  <p>A button in the corner of the page that does the same as the toolbar button. Drag it to move it;
+     its × hides it until the page is reloaded.</p>
+  <label for="buttonSites" class="field-label">Show it on these sites (one per line, subdomains included):</label>
+  <textarea id="buttonSites" rows="3" spellcheck="false" autocapitalize="off" placeholder="economist.com"></textarea>
+  <div id="buttonSitesError" class="error" role="alert"></div>
+  <label class="toggle">
+    <input id="buttonOnBypass" type="checkbox">
+    <span>Also show it on bypass-site pages, to switch to the next site.</span>
+  </label>
+
+  <div class="actions">
+    <button id="save" class="primary" type="button">Save</button>
+    <span id="status" role="status"></span>
+  </div>
+
+  <h2>Site addresses</h2>
+  <ul>
+    <li><code>{url}</code> becomes the full article address, e.g. <code>https://archive.ph/newest/{url}</code></li>
+    <li><code>{encoded}</code> becomes the address percent-encoded, for sites that take it as a parameter, e.g. <code>https://example.com/read?u={encoded}</code></li>
+    <li><code>{path}</code> becomes only the path, e.g. <code>https://scribe.rip/{path}</code></li>
+    <li><code>{domain}</code> becomes the site's address the way Google Translate writes it (<code>www-economist-com</code>), e.g. <code>https://{domain}.translate.goog/{path}</code></li>
+  </ul>
+  <p>When you save a site that's new, the browser asks for permission to see its pages, so the
+     automatic fallback can tell when one fails and the floating button can appear on it.</p>
+
+  <script src="services.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

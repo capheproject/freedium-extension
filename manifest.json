@@ -1,11 +1,25 @@
 {
   "manifest_version": 3,
   "name": "Open in Freedium",
-  "version": "1.0.0",
-  "description": "Open the current page (or a link) through freedium-mirror.cfd.",
-  "permissions": ["activeTab", "contextMenus"],
+  "version": "1.3.1",
+  "description": "Open the current page (or a link) through archive.today and other bypass sites, falling back to the next one when a site fails.",
+  "permissions": ["activeTab", "contextMenus", "scripting", "storage", "webNavigation", "webRequest"],
+  "host_permissions": [
+    "*://freedium-mirror.cfd/*",
+    "*://freedium.cfd/*",
+    "*://scribe.rip/*",
+    "*://archive.ph/*",
+    "*://web.archive.org/*",
+    "*://*.translate.goog/*",
+    "*://*.economist.com/*"
+  ],
+  "optional_host_permissions": ["*://*/*"],
   "background": {
     "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   },
   "icons": {
     "16": "icons/icon16.png",
@@ -14,7 +28,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Open in Freedium",
+    "default_title": "Open through a bypass site (press again to try the next one)",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png"
@@ -25,7 +39,7 @@
       "suggested_key": {
         "default": "Alt+Shift+F"
       },
-      "description": "Open current page in Freedium"
+      "description": "Open current page through a bypass site, or try the next one"
     }
   }
 }
